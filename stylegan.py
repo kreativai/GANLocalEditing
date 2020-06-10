@@ -462,8 +462,9 @@ class G_synthesis(nn.Module):
         return x
 
 
-    def set_noise(self, mode=None):
+    def set_noise(self, mode=None, return_to_optimize=False):
         assert mode is None or mode == 'zero' or mode == 'zeros' or mode == 'fixed'
+        noises = []
         for k, m in self.blocks.named_children():
             res = tuple((int(sz) for sz in k.split('x')))
             if hasattr(m, 'conv'):
@@ -482,6 +483,12 @@ class G_synthesis(nn.Module):
                     nl.noise = torch.zeros(1, 1, res[0], res[1], device=device, dtype=dtype)
                 else:  # fixed
                     nl.noise = torch.randn(1, 1, res[0], res[1], device=device, dtype=dtype)
+                if return_to_optimize and mode is not None:
+                    nl.noise.requires_grad = True
+                    noises += [nl.noise]
+
+        if return_to_optimize:
+            return noises
 
 
 class StyleGAN(nn.Module):
